@@ -35,7 +35,7 @@ const int K[] = {
 		0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
 		0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
 		0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-		0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2 };
+		0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 int m_H[8] = { 0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19 };
 
 string TextToBinaryString(string words) {
@@ -63,31 +63,33 @@ string padding(string msg) {
 	return msg;
 }
 
-int stringtoint(string msg) {
+int **stringtoint(string msg) {
 	int length = strlen(msg.c_str());
-	int **Mptr = new int*[length / 512];
-	for (int i = 0; i < 16; i++) {
-		Mptr[i] = new int[128];
+	int **Mptr = new int*[length/512];
+	for (int i = 0; i < length/512; i++) {
+		Mptr[i]  = new int[16];
 	}
 	for (int i = 0; i < (length / 512); i++) {
-		for (int j = 0; j < 128; j++) {
-			Mptr[i][j] = atoi(msg.substr(4 * j, (4 * (j + 1)) - 1).c_str());
+		for (int j = 0; j < 16; j++) {
+			Mptr[i][j] = stoi(msg.substr(32 * j, (32 * (j + 1))).c_str(),0,2);
 		}
 	}
-	return Mptr[0][0];
+	return Mptr;
 }
 int* sha256(int** Mptr,int length) {
 	int W[64];
-	for (int i = 0; i < 16;i++) {
-		W[i] = Mptr[0][i];
-	}
-	for(int i =16;i<64;i++)
-	{
-		W[i] = SHA256_F4(W[i - 2]) + W[i - 7] + SHA256_F3(W[i - 15]) + W[i - 16];
-	}
+	
 	for(int i = 0;i<length/512;i++){
 		int T1, T2, a=m_H[0], b=m_H[1], c=m_H[2], d=m_H[3], e=m_H[4], f=m_H[5], g=m_H[6], h=m_H[7];
-		for (int j = 0; j < 64; j++) {
+		for (int j = 0; j < 16; j++) {
+			W[j] = Mptr[i][j];
+		}
+		for (int j = 16; j < 64; j++)
+		{
+			W[j] = SHA256_F4(W[j - 2]) + W[j - 7] + SHA256_F3(W[j - 15]) + W[j - 16];
+		}
+		
+		for (int j = 0; j < 64; j++) {	
 			T1 = h + SHA256_F2(e) + SHA2_CH(e,f,g) + K[j] + W[j];
 			T2 = SHA256_F1(a) + SHA2_MAJ(a,b, c);
 			h = g;
@@ -98,6 +100,10 @@ int* sha256(int** Mptr,int length) {
 			c = b;
 			b = a;
 			a = T1 + T2;
+
+			if (j == 1) {
+				printf("0x%X", T1);
+			}
 		}
 		m_H[0] += a;
 		m_H[1] += b;
@@ -114,8 +120,8 @@ int main() {
 	//cout << (sha256(stringtoint(padding("abc")),1)[0]);
 	string a = padding("abc");
 	cout << padding("abc") << endl;
-	int b = stringtoint(a);
-	printf("0x%X",b);
+	int b = sha256(stringtoint(a),512)[0];
+	//printf("0x%X",b);
 }
 
 
